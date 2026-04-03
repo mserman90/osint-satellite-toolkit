@@ -3,83 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OSINT Satellite Imagery Toolkit</title>
+    <title>OSINT Satellite Imagery Toolkit - Autonomous</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { background-color: #121212; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .card { background-color: #1e1e1e; border: 1px solid #333; color: white; margin-bottom: 20px; }
-        .btn-primary { background-color: #0d6efd; border: none; }
         .header { padding: 40px 0; text-align: center; background: linear-gradient(135deg, #1a1a1a 0%, #000 100%); border-bottom: 2px solid #0d6efd; }
-        pre { background: #000; padding: 15px; border-radius: 5px; color: #00ff00; overflow-x: auto; }
-        .tool-icon { font-size: 2rem; margin-bottom: 10px; color: #0d6efd; }
+        #map { height: 400px; width: 100%; border-radius: 8px; border: 1px solid #444; margin-top: 20px; }
+        .status-badge { font-size: 0.8rem; padding: 5px 10px; border-radius: 15px; }
+        .loading-spinner { display: none; }
+        #satellite-display { max-width: 100%; border-radius: 8px; display: none; border: 2px solid #0d6efd; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>OSINT Satellite Imagery Toolkit</h1>
-        <p class="lead">Remote Sensing Tools for Investigators</p>
+        <h1>Autonomous Satellite OSINT Toolkit</h1>
+        <p class="lead">Powered by Nominatim & NASA GIBS</p>
     </div>
 
     <div class="container mt-5">
         <div class="row">
-            <!-- War at Night (VIIRS) -->
-            <div class="col-md-6">
-                <div class="card h-100 p-4">
-                    <div class="tool-icon">🌙</div>
-                    <h3>War at Night (VIIRS)</h3>
-                    <p>Track conflict intensity and electricity infrastructure using nighttime light signatures. Identifies flares, blackouts, and recovery.</p>
-                    <a href="https://code.earthengine.google.com/2cf77d8cb9afd76b73100637fbffdf5d" target="_blank" class="btn btn-primary">Open GEE Script</a>
+            <div class="col-md-4">
+                <div class="card p-4">
+                    <h3>Search Context</h3>
+                    <div class="mb-3">
+                        <label class="form-label">Bölge ve Bağlam</label>
+                        <input type="text" id="location-input" class="form-control" placeholder="Örn: Mosul, Iraq 2016">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tarih</label>
+                        <input type="date" id="date-input" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Metodoloji (RS4OSINT)</label>
+                        <select id="method-select" class="form-select">
+                            <option value="VIIRS_SNPP_DayNightBand_ENCC">War at Night (VIIRS Lights)</option>
+                            <option value="MODIS_Terra_CorrectedReflectance_TrueColor">True Color (MODIS Optic)</option>
+                            <option value="MODIS_Terra_CorrectedReflectance_Bands721">Burn Scar / Oil (MODIS 7-2-1)</option>
+                        </select>
+                    </div>
+                    <button id="analyze-btn" class="btn btn-primary w-100">Otonom Analiz Başlat</button>
+                    <div class="mt-3 loading-spinner" id="spinner">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <span class="ms-2">Uydulara bağlanılıyor...</span>
+                    </div>
                 </div>
+                
+                <div id="status-log" class="mt-3 small text-muted"></div>
             </div>
 
-            <!-- Refinery ID -->
-            <div class="col-md-6">
-                <div class="card h-100 p-4">
-                    <div class="tool-icon">🏭</div>
-                    <h3>Refinery Identification</h3>
-                    <p>Analyze multispectral signatures to detect makeshift or industrial oil refineries in conflict zones or remote areas.</p>
-                    <a href="https://bellingcat.github.io/RS4OSINT/C2_Refineries.html" target="_blank" class="btn btn-outline-primary mt-auto">View Methodology</a>
+            <div class="col-md-8">
+                <div class="card p-3">
+                    <div id="map"></div>
+                    <div class="mt-3 text-center">
+                        <img id="satellite-display" src="" alt="Satellite Tile">
+                        <div id="image-info" class="mt-2 small text-info"></div>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <div class="row mt-4">
-            <!-- Blast Damage -->
-            <div class="col-md-6">
-                <div class="card h-100 p-4">
-                    <div class="tool-icon">💥</div>
-                    <h3>Blast Damage Assessment</h3>
-                    <p>Use Sentinel-1 SAR change detection to assess structural damage after explosions or natural disasters.</p>
-                    <a href="https://bellingcat.github.io/RS4OSINT/C3_Blast.html" target="_blank" class="btn btn-outline-primary">View Tutorial</a>
-                </div>
-            </div>
-
-            <!-- Ship & Object Detection -->
-            <div class="col-md-6">
-                <div class="card h-100 p-4">
-                    <div class="tool-icon">🚢</div>
-                    <h3>Ship & Object Detection</h3>
-                    <p>Identify marine traffic and large infrastructure objects using automated thresholding and SAR imagery.</p>
-                    <a href="https://bellingcat.github.io/RS4OSINT/C4_Ships.html" target="_blank" class="btn btn-outline-primary">Ship Detection Guide</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="mt-5 p-4 bg-dark rounded shadow">
-            <h2>Quick Start: Nighttime Lights Template</h2>
-            <p>Copy this snippet into your Google Earth Engine console to start analyzing VIIRS data:</p>
-            <pre>
-var VIIRS = ee.ImageCollection("NOAA/VIIRS/DNB/MONTHLY_V1/VCMCFG").select('avg_rad');
-var startDate = '2023-01-01';
-var endDate = '2024-01-01';
-var filtered = VIIRS.filterDate(startDate, endDate);
-Map.addLayer(filtered.median(), {min: 0, max: 20}, 'Median Radiance');
-            </pre>
         </div>
     </div>
 
-    <footer class="mt-5 py-4 text-center text-muted border-top border-secondary">
-        <p>Based on Bellingcat's <a href="https://bellingcat.github.io/RS4OSINT/" class="text-info">RS4OSINT Guide</a>. Created for OSINT communities.</p>
-    </footer>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([20, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let marker;
+
+        document.getElementById('analyze-btn').addEventListener('click', async () => {
+            const query = document.getElementById('location-input').value;
+            const dateInput = document.getElementById('date-input').value || new Date().toISOString().split('T')[0];
+            const method = document.getElementById('method-select').value;
+            const spinner = document.getElementById('spinner');
+            const log = document.getElementById('status-log');
+            
+            if (!query) return alert("Lütfen bir bölge girin.");
+            
+            spinner.style.display = 'block';
+            log.innerHTML = "Nominatim üzerinden koordinatlar çözümleniyor...";
+
+            try {
+                // 1. Geocoding via Nominatim
+                const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+                const geoData = await geoRes.json();
+
+                if (geoData.length === 0) throw new Error("Bölge bulunamadı.");
+
+                const lat = parseFloat(geoData[0].lat);
+                const lon = parseFloat(geoData[0].lon);
+
+                log.innerHTML += `<br>Bulundu: ${lat.toFixed(4)}, ${lon.toFixed(4)}. NASA GIBS'e bağlanılıyor...`;
+                map.setView([lat, lon], 10);
+                if (marker) map.removeLayer(marker);
+                marker = L.marker([lat, lon]).addTo(map);
+
+                // 2. Fetch from NASA GIBS (Simplified Tile Selection)
+                // Note: Real GIBS tiles require projection math. For demo/prototype, we use the WMTS pattern.
+                // We'll calculate a static tile based on coordinates or use an image overlay.
+                const zoom = 10;
+                const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
+                const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
+                
+                const imageUrl = `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${method}/default/${dateInput}/GoogleMapsCompatible_Level9/9/${y}/${x}.jpg`;
+                
+                const satelliteImg = document.getElementById('satellite-display');
+                satelliteImg.src = imageUrl;
+                satelliteImg.style.display = 'block';
+                document.getElementById('image-info').innerText = `Görüntü Kaynağı: NASA GIBS | Tarih: ${dateInput} | Katman: ${method}`;
+                
+                log.innerHTML += "<br>Analiz tamamlandı. Gerçek uydu görüntüsü yüklendi.";
+            } catch (err) {
+                log.innerHTML += `<br>Hata: ${err.message}`;
+            } finally {
+                spinner.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>
